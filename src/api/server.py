@@ -1,15 +1,20 @@
+import os
 from fastapi import FastAPI, Depends
 from starlette.requests import Request
 from starlette.responses import Response
 from routes import events
-from routes import venues
 from db import Database
 from pymongo import MongoClient
 from utils.db import get_db
 
-db_connection = MongoClient(host="localhost", port=27017)
+MONGO_DB__HOST_URI = os.environ["MONGO_DB__HOST_URI"]
+MONGO_DB__HOST_PORT = int(os.environ["MONGO_DB__HOST_PORT"])
+db_connection = MongoClient(host=MONGO_DB__HOST_URI, port=MONGO_DB__HOST_PORT)
 
-app = FastAPI()
+app = FastAPI(title="GALA Event Management API",
+              description="Management module for performing REST operations on GALA event resources",
+              openapi_url="/gala_event_api__openapi.json",
+              version="v1")
 
 
 @app.middleware("http")
@@ -24,8 +29,7 @@ async def db_session_middleware(request: Request, call_next):
 
 
 app.include_router(events.routes,
-                   prefix="/events", tags=["events"])
-app.include_router(venues.routes, prefix="/venues", tags=["venues"])
+                   prefix="/api/v1", tags=["CRUD on Events"])
 
 if __name__ == "__main__":
     import uvicorn
