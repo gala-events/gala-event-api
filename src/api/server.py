@@ -5,10 +5,10 @@ from starlette.responses import Response
 from routes import events
 from db import Database
 from pymongo import MongoClient
-from utils.db import get_db
+from utils import get_db
 
-MONGO_DB__HOST_URI = os.environ["MONGO_DB__HOST_URI"]
-MONGO_DB__HOST_PORT = int(os.environ["MONGO_DB__HOST_PORT"])
+MONGO_DB__HOST_URI = os.environ.get("MONGO_DB__HOST_URI", "localhost")
+MONGO_DB__HOST_PORT = int(os.environ.get("MONGO_DB__HOST_PORT", 27017))
 db_connection = MongoClient(host=MONGO_DB__HOST_URI, port=MONGO_DB__HOST_PORT)
 
 app = FastAPI(title="GALA Event Management API",

@@ -1,6 +1,11 @@
+from datetime import datetime
 from typing import List
-from uuid import UUID, uuid4
+from uuid import uuid4
+
 from pydantic import BaseModel
+from pymongo.collection import ReturnDocument
+
+from utils import RecordNotFoundException
 from .database import Database
 
 
@@ -27,34 +32,46 @@ class CRUD:
         return data
 
     @staticmethod
-    def find_by_uuid(db: Database, model_name, uuid: UUID) -> BaseModel:
+    def find_by_uuid(db: Database, model_name, uuid: str) -> BaseModel:
         assert db, "DB not provided"
         assert model_name, "ModelName not provided"
-        record = CRUD.find(db, model_name, filter_params={"uuid": UUID(uuid)})
+        assert uuid, "%s UUID not provided" % model_name
+        record = db[model_name].find_one({"uuid": uuid})
         if not record:
-            raise Exception("Not Found")
-        return record[0]
+            raise RecordNotFoundException(model_name, uuid)
+        return record
 
     @staticmethod
-    def create(db: Database, model_name, data: dict) -> UUID:
+    def create(db: Database, model_name, data: dict) -> str:
         assert db, "DB not provided"
         assert model_name, "ModelName not provided"
-        record_id = uuid4()
+        record_id = str(uuid4())
         data.update(uuid=record_id)
-        db[model_name].insert_one(data)
+        data.update(created_at=datetime.utcnow().isoformat())
+        data.update(updated_at=datetime.utcnow().isoformat())
+        inserted_result = db[model_name].insert_one(data)
+        if inserted_result.inserted_id is None:
+            raise Exception("Failed to create %s record." % model_name)
         return record_id
 
     @staticmethod
-    def update(db: Database, model_name, uuid: UUID, data: dict) -> UUID:
+    def update(db: Database, model_name, uuid: str, data: dict) -> BaseModel:
         assert db, "DB not provided"
         assert model_name, "ModelName not provided"
         assert uuid, "UUID not provided"
-        db[model_name].update({"uuid": UUID(uuid)}, {"$set": data})
-        return CRUD.find_by_uuid(db, model_name, uuid)
+        data.update(uuid=uuid)
+        data.update(updated_at=datetime.utcnow().isoformat())
+        result = db[model_name].find_one_and_update(
+            {"uuid": uuid}, {"$set": data}, return_document=ReturnDocument.AFTER)
+        if result == None:
+            raise RecordNotFoundException(model_name, uuid)
+        return result
 
     @staticmethod
-    def delete(db: Database, model_name, uuid: UUID) -> None:
+    def delete(db: Database, model_name, uuid: str) -> None:
         assert db, "DB not provided"
         assert model_name, "ModelName not provided"
         assert uuid, "UUID not provided"
-        db[model_name].remove({"uuid": UUID(uuid)})
+        result = db[model_name].find_one_and_delete({"uuid": uuid})
+        if result is None:
+            raise RecordNotFoundException(model_name, uuid)
