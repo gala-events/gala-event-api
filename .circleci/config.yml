@@ -39,7 +39,7 @@ jobs:
             docker push $IMAGE_NAME:latest
             docker push $IMAGE_NAME:$IMAGE_TAG
   publish-tags:
-    executors: docker-publisher
+    executor: docker-publisher
     steps:
       - setup_remote_docker
       - attach_to_workspace:
