@@ -77,7 +77,7 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
-      - publish-tag:
+      - publish-tags:
           requires:
             - build
           filters:
