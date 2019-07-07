@@ -60,9 +60,9 @@ workflows:
   build-master:
     jobs:
       - build:
-        filters:
-          branches:
-            only: master
+          filters:
+            branches:
+              only: master
       - publish-latest:
           requires:
             - build
